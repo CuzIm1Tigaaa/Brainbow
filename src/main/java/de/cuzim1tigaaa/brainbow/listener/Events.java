@@ -1,26 +1,38 @@
 package de.cuzim1tigaaa.brainbow.listener;
 
 import de.cuzim1tigaaa.brainbow.Brainbow;
-import org.bukkit.*;
+import de.cuzim1tigaaa.brainbow.team.Team;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.potion.*;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
 
-import java.util.*;
+import java.util.EnumSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Events implements Listener {
 
 	private final Brainbow plugin;
+	private final Effects effects;
+
 	private final EnumSet<Material> blocks = EnumSet.of(
 			Material.REDSTONE_BLOCK,
 			Material.COAL_BLOCK,
@@ -34,103 +46,9 @@ public class Events implements Listener {
 	private final int radius = 3;
 
 	public Events(Brainbow plugin) {
+		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 		this.plugin = plugin;
-		this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
-	}
-
-	@EventHandler
-	public void chat(AsyncPlayerChatEvent event) {
-
-	}
-
-	@EventHandler
-	public void move(PlayerMoveEvent event) {
-		Player player = event.getPlayer();
-
-		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
-		if(block.getType() == Material.SNOW || block.getRelative(BlockFace.UP).getType() == Material.SNOW)
-			event.setCancelled(true);
-
-		if(!blocks.contains(block.getType())) {
-			player.removePotionEffect(PotionEffectType.SLOW);
-			return;
-		}
-
-		player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 4, false, false, false));
-	}
-
-	@EventHandler
-	public void spawnCreatures(CreatureSpawnEvent event) {
-		switch(event.getSpawnReason()) {
-			case ENDER_PEARL, EGG -> event.setCancelled(true);
-		}
-	}
-
-	@EventHandler
-	public void projectileLand(ProjectileHitEvent event) {
-		Projectile entity = event.getEntity();
-		if(entity.getMetadata("bow").isEmpty() || !entity.getMetadata("bow").get(0).asBoolean())
-			return;
-		if(!(entity.getShooter() instanceof Player player))
-			return;
-
-		switch(entity.getType()) {
-			case TRIDENT -> {
-				entity.remove();
-				LightningStrike strike = entity.getWorld().spawn(entity.getLocation(), LightningStrike.class);
-				strike.setCausingPlayer(player);
-				strike.setFlashes(1);
-			}
-			case SNOWBALL -> {
-				Location location;
-				if(event.getHitBlock() != null) location = event.getHitBlock().getLocation();
-				else if(event.getHitEntity() != null) location = event.getHitEntity().getLocation();
-				else location = entity.getLocation();
-
-				if(location.getWorld() == null)
-					return;
-
-				World world = location.getWorld();
-				Set<Location> snowLocations = new HashSet<>();
-				for(int x = -radius; x <= radius; x++)
-					for(int z = -radius; z <= radius; z++)
-						if(x * x + z * z <= radius * radius) {
-							Location blockLocation = world.getHighestBlockAt(location.getBlockX() + x,
-									location.getBlockZ() + z).getLocation();
-							world.getBlockAt(blockLocation.add(0, 1, 0)).setType(Material.SNOW);
-							snowLocations.add(blockLocation);
-						}
-
-				Bukkit.getScheduler().runTaskLater(plugin, () -> {
-					for(Location snowLocation : snowLocations)
-						snowLocation.getBlock().setType(Material.AIR);
-				}, 200L);
-			}
-			case EGG -> {
-				Entity target;
-				if((target = event.getHitEntity()) == null)
-					return;
-
-				Location targetLoc = target.getLocation();
-				Location playerLoc = player.getLocation();
-
-				target.teleport(playerLoc);
-				//				target.playSound(playerLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, 1F);
-				player.teleport(targetLoc);
-				player.playSound(targetLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, 1F);
-			}
-			case WITHER_SKULL -> {
-				WitherSkull skull = (WitherSkull) entity;
-				if(event.getHitEntity() == null || !(event.getHitEntity() instanceof Player target))
-					return;
-
-				if(skull.isCharged()) {
-					target.damage(1000);
-					return;
-				}
-				target.damage(2);
-			}
-		}
+		this.effects = new Effects(plugin);
 	}
 
 	@EventHandler
@@ -211,5 +129,119 @@ public class Events implements Listener {
 				snowball.setShooter(player);
 			}
 		}
+	}
+
+	@EventHandler
+	public void projectileLand(ProjectileHitEvent event) {
+		Projectile entity = event.getEntity();
+		if(entity.getMetadata("bow").isEmpty() || !entity.getMetadata("bow").get(0).asBoolean())
+			return;
+		if(!(entity.getShooter() instanceof Player player))
+			return;
+
+		switch(entity.getType()) {
+			case TRIDENT -> {
+				entity.remove();
+				LightningStrike strike = entity.getWorld().spawn(entity.getLocation(), LightningStrike.class);
+				strike.setCausingPlayer(player);
+				strike.setFlashes(1);
+			}
+			case SNOWBALL -> {
+				Location location;
+				if(event.getHitBlock() != null) location = event.getHitBlock().getLocation();
+				else if(event.getHitEntity() != null) location = event.getHitEntity().getLocation();
+				else location = entity.getLocation();
+
+				effects.spawnSnow(location, radius);
+			}
+			case EGG -> {
+				Entity target;
+				if((target = event.getHitEntity()) == null)
+					return;
+
+				Location targetLoc = target.getLocation();
+				Location playerLoc = player.getLocation();
+
+				target.teleport(playerLoc);
+				//				target.playSound(playerLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, 1F);
+				player.teleport(targetLoc);
+				player.playSound(targetLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, 1F);
+			}
+			case WITHER_SKULL -> {
+				WitherSkull skull = (WitherSkull) entity;
+				if(event.getHitEntity() == null || !(event.getHitEntity() instanceof Player target))
+					return;
+
+				if(skull.isCharged()) {
+					target.damage(1000);
+					return;
+				}
+				target.damage(4);
+			}
+		}
+	}
+
+	@EventHandler
+	public void explodeTNT(EntityExplodeEvent event) {
+		Entity entity = event.getEntity();
+		if(entity.getMetadata("bow").isEmpty() || !entity.getMetadata("bow").get(0).asBoolean())
+			return;
+
+		if(entity.getType() != EntityType.PRIMED_TNT)
+			return;
+		TNTPrimed tnt = (TNTPrimed) entity;
+
+		Team team = plugin.getUtils().getTeamWhoseTargetWasHit(tnt.getLocation());
+		if(team == null)
+			return;
+		team.removeHealth();
+
+		if(!(tnt.getSource() instanceof Player player))
+			return;
+
+		if(team.getPlayers().contains(player)) {
+			tnt.getSource().sendMessage("§cYou hit your own target!");
+			return;
+		}
+
+		Team playersTeam;
+		if((playersTeam = plugin.getUtils().getPlayersTeam(player)) != null)
+			playersTeam.addHealth();
+
+		tnt.getSource().sendMessage("§aYou hit the target of " + team.getColor() + team.getPlayers().iterator().next().getName());
+	}
+
+	@EventHandler
+	public void move(PlayerMoveEvent event) {
+		Player player = event.getPlayer();
+
+		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
+		if(block.getType() == Material.SNOW || block.getRelative(BlockFace.UP).getType() == Material.SNOW)
+			event.setCancelled(true);
+
+		if(!blocks.contains(block.getType())) {
+			player.removePotionEffect(PotionEffectType.SLOW);
+			return;
+		}
+
+		player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 4, false, false, false));
+	}
+
+	@EventHandler
+	public void spawnCreatures(CreatureSpawnEvent event) {
+		switch(event.getSpawnReason()) {
+			case ENDER_PEARL, EGG -> event.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	public void createFire(BlockIgniteEvent event) {
+		if(event.getCause() == BlockIgniteEvent.IgniteCause.LIGHTNING)
+			event.setCancelled(true);
+	}
+
+	@EventHandler
+	public void chat(AsyncPlayerChatEvent event) {
+
 	}
 }
