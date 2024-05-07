@@ -1,12 +1,11 @@
 package de.cuzim1tigaaa.brainbow.listener;
 
 import de.cuzim1tigaaa.brainbow.Brainbow;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
+import org.bukkit.entity.Snowball;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Effects {
 
@@ -23,25 +22,22 @@ public class Effects {
         for(int i = 0; i < snow.size(); i++) {
             final int index = i;
             Bukkit.getScheduler().runTaskLater(plugin, () -> 
-                    snow.get(index).getBlock().setType(Material.SNOW), i * 10L);
+                    snow.get(index).getBlock().setType(Material.SNOW), i);
         }
 
         int taskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            for(int i = 0; i < snow.size(); i++) {
-                final int index = i;
-                Bukkit.getScheduler().runTaskLater(plugin, () ->
-                        snow.get(index).getBlock().setType(Material.AIR), i * 5L);
-            }
-        }, 5L, 7L).getTaskId();
+            Location randomLocation = snow.get(ThreadLocalRandom.current().nextInt(snow.size()));
+            randomLocation.getWorld().spawn(randomLocation.clone().add(.5, 3, .5), Snowball.class);
+        }, snow.size(), 3L).getTaskId();
         
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Bukkit.getScheduler().cancelTask(taskId);
             for(int i = 0; i < snow.size(); i++) {
                 final int index = i;
                 Bukkit.getScheduler().runTaskLater(plugin, () ->
-                        snow.get(index).getBlock().setType(Material.SNOW), i * 5L);
+                        snow.get(index).getBlock().setType(Material.AIR), i);
             }
-        }, 200L);
+        }, 150L);
     }
 
     private Set<Location> getLocations(Location location, int radius) {
@@ -52,9 +48,9 @@ public class Effects {
         for(int x = -radius; x <= radius; x++)
             for(int z = -radius; z <= radius; z++)
                 if(x * x + z * z <= radius * radius) {
-                    Location blockLocation = world.getHighestBlockAt(
-                            location.getBlockX() + x, location.getBlockZ() + z).getLocation();
-                    snowLocations.add(blockLocation);
+                    Location block = new Location(world, location.getBlockX() + x, location.getBlockY(), location.getBlockZ() + z);
+                    Location blockLocation = world.getHighestBlockAt(block).getLocation();
+                    snowLocations.add(blockLocation.add(0, 1, 0));
                 }
         return snowLocations;
     }

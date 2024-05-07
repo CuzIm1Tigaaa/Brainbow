@@ -24,6 +24,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
+import org.bukkit.util.Vector;
 
 import java.util.EnumSet;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,16 +35,13 @@ public class Events implements Listener {
 	private final Effects effects;
 
 	private final EnumSet<Material> blocks = EnumSet.of(
-			Material.REDSTONE_BLOCK,
-			Material.COAL_BLOCK,
-			Material.LAPIS_BLOCK,
-			Material.WAXED_COPPER_BLOCK,
-			Material.EMERALD_BLOCK,
-			Material.DIAMOND_BLOCK,
-			Material.GOLD_BLOCK,
-			Material.SNOW_BLOCK);
+			Material.REDSTONE_BLOCK,    Material.WAXED_COPPER_BLOCK,
+			Material.GOLD_BLOCK,        Material.EMERALD_BLOCK,
+			Material.DIAMOND_BLOCK,     Material.LAPIS_BLOCK,
+			Material.SNOW_BLOCK,        Material.IRON_BLOCK,
+			Material.COAL_BLOCK,        Material.NETHERITE_BLOCK);
 
-	private final int radius = 3;
+	private final int radius = 2;
 
 	public Events(Brainbow plugin) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -70,24 +68,17 @@ public class Events implements Listener {
 				tnt.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 3D));
 				tnt.setSource(player);
 			}
-			case COAL_BLOCK -> {
-				WitherSkull skull = player.getWorld().spawn(player.getEyeLocation(), WitherSkull.class);
-				skull.setMetadata("bow", new FixedMetadataValue(plugin, true));
-				skull.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 4D));
-				skull.setCharged(ThreadLocalRandom.current().nextInt(0, 10) == 0);
-				skull.setShooter(player);
-			}
-			case LAPIS_BLOCK -> {
-				EnderPearl pearl = player.getWorld().spawn(player.getEyeLocation(), EnderPearl.class);
-				pearl.setMetadata("bow", new FixedMetadataValue(plugin, true));
-				pearl.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 3D));
-				pearl.setShooter(player);
-			}
 			case WAXED_COPPER_BLOCK -> {
 				Trident trident = player.getWorld().spawn(player.getEyeLocation(), Trident.class);
 				trident.setMetadata("bow", new FixedMetadataValue(plugin, true));
 				trident.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 3D));
 				trident.setShooter(player);
+			}
+			case GOLD_BLOCK -> {
+				Egg egg = player.getWorld().spawn(player.getEyeLocation(), Egg.class);
+				egg.setMetadata("bow", new FixedMetadataValue(plugin, true));
+				egg.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 4D));
+				egg.setShooter(player);
 			}
 			case EMERALD_BLOCK -> {
 				ThrownPotion potion = player.getWorld().spawn(player.getEyeLocation(), ThrownPotion.class);
@@ -116,11 +107,11 @@ public class Events implements Listener {
 					}, (int) ((finalI -1) * 5L));
 				}
 			}
-			case GOLD_BLOCK -> {
-				Egg egg = player.getWorld().spawn(player.getEyeLocation(), Egg.class);
-				egg.setMetadata("bow", new FixedMetadataValue(plugin, true));
-				egg.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 4D));
-				egg.setShooter(player);
+			case LAPIS_BLOCK -> {
+				EnderPearl pearl = player.getWorld().spawn(player.getEyeLocation(), EnderPearl.class);
+				pearl.setMetadata("bow", new FixedMetadataValue(plugin, true));
+				pearl.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 3D));
+				pearl.setShooter(player);
 			}
 			case SNOW_BLOCK -> {
 				Snowball snowball = player.getWorld().spawn(player.getEyeLocation(), Snowball.class);
@@ -128,13 +119,67 @@ public class Events implements Listener {
 				snowball.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 4D));
 				snowball.setShooter(player);
 			}
+			case IRON_BLOCK -> {
+				Arrow arrow = player.getWorld().spawn(player.getEyeLocation(), Arrow.class);
+				arrow.setVelocity(event.getProjectile().getVelocity());
+				arrow.setShooter(player);
+
+				int numArrows = 20, angle = 20;
+				for (int i = 0; i < numArrows; i++) {
+					double randomX = Math.random() * 2 - 1;
+					double randomY = Math.random() * 2 - 1;
+					double randomZ = Math.random() * 2 - 1;
+					Vector direction = new Vector(randomX, randomY, randomZ).normalize();
+
+					double angleXZ = Math.toRadians(Math.random() * angle - angle / 2.0);
+					double angleY = Math.toRadians(Math.random() * angle - angle / 2.0);
+					direction.rotateAroundAxis(new Vector(0, 1, 0), angleXZ);
+					direction.rotateAroundAxis(new Vector(1, 0, 0), angleY);
+
+					Arrow spread = player.launchProjectile(Arrow.class);
+					spread.setMetadata("multishot", new FixedMetadataValue(plugin, true));
+					spread.setVelocity(direction.multiply(2));
+				}
+			}
+			case COAL_BLOCK -> {
+				WitherSkull skull = player.getWorld().spawn(player.getEyeLocation(), WitherSkull.class);
+				skull.setMetadata("bow", new FixedMetadataValue(plugin, true));
+				skull.setVelocity(player.getLocation().getDirection().multiply(event.getForce() * 4D));
+				skull.setCharged(ThreadLocalRandom.current().nextInt(0, 10) == 0);
+				skull.setShooter(player);
+			}
+			case NETHERITE_BLOCK -> {
+				Arrow arrow = player.getWorld().spawn(player.getEyeLocation(), Arrow.class);
+				arrow.setVelocity(event.getProjectile().getVelocity());
+				arrow.addCustomEffect(new PotionEffect(PotionEffectType.LEVITATION, 5, 9), true);
+				arrow.setMetadata("levitate", new FixedMetadataValue(plugin, true));
+				arrow.setShooter(player);
+			}
 		}
 	}
 
 	@EventHandler
 	public void projectileLand(ProjectileHitEvent event) {
 		Projectile entity = event.getEntity();
-		if(entity.getMetadata("bow").isEmpty() || !entity.getMetadata("bow").get(0).asBoolean())
+
+		if(entity.getType() == EntityType.ARROW) {
+			if(entity.hasMetadata("levitate")) {
+				Entity targetEntity;
+				if((targetEntity = event.getHitEntity()) == null || !(targetEntity instanceof LivingEntity target))
+					return;
+
+				target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 5, 9, false, false, false));
+				entity.remove();
+				return;
+			}
+
+			if(entity.hasMetadata("multishot")) {
+				entity.remove();
+				return;
+			}
+		}
+
+		if(!entity.hasMetadata("bow"))
 			return;
 		if(!(entity.getShooter() instanceof Player player))
 			return;
@@ -191,7 +236,7 @@ public class Events implements Listener {
 			return;
 		TNTPrimed tnt = (TNTPrimed) entity;
 
-		Team team = plugin.getUtils().getTeamWhoseTargetWasHit(tnt.getLocation());
+		Team team = plugin.getTeamUtils().getTeamWhoseTargetWasHit(tnt.getLocation());
 		if(team == null)
 			return;
 		team.removeHealth();
@@ -205,7 +250,7 @@ public class Events implements Listener {
 		}
 
 		Team playersTeam;
-		if((playersTeam = plugin.getUtils().getPlayersTeam(player)) != null)
+		if((playersTeam = plugin.getTeamUtils().getPlayersTeam(player)) != null)
 			playersTeam.addHealth();
 
 		tnt.getSource().sendMessage("§aYou hit the target of " + team.getColor() + team.getPlayers().iterator().next().getName());
@@ -216,14 +261,18 @@ public class Events implements Listener {
 		Player player = event.getPlayer();
 
 		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
-		if(block.getType() == Material.SNOW || block.getRelative(BlockFace.UP).getType() == Material.SNOW)
-			event.setCancelled(true);
+		if(block.getType() == Material.SNOW || block.getRelative(BlockFace.UP).getType() == Material.SNOW) {
+			player.setFreezeTicks(player.getMaxFreezeTicks());
+			player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 9, false, false, false));
+			return;
+		}
 
 		if(!blocks.contains(block.getType())) {
 			player.removePotionEffect(PotionEffectType.SLOW);
 			return;
 		}
 
+		player.setFreezeTicks(0);
 		player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 4, false, false, false));
 	}
 
