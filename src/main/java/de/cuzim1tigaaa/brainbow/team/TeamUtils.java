@@ -13,7 +13,7 @@ public class TeamUtils {
     }
 
     public boolean isInTeamTarget(Location location) {
-        for (Team team : plugin.getFile().getDataSet()) {
+        for (Team team : plugin.getTeamFile().getDataSet()) {
             if (team.getTarget().contains(location))
                 return true;
         }
@@ -21,7 +21,7 @@ public class TeamUtils {
     }
 
     public Team getTeamWhoseTargetWasHit(Location location) {
-        for (Team team : plugin.getFile().getDataSet()) {
+        for (Team team : plugin.getTeamFile().getDataSet()) {
             if (team.getTarget().contains(location))
                 return team;
         }
@@ -29,7 +29,7 @@ public class TeamUtils {
     }
 
     public Team getPlayersTeam(Player player) {
-        for (Team team : plugin.getFile().getDataSet()) {
+        for (Team team : plugin.getTeamFile().getDataSet()) {
             if (team.getPlayers().contains(player))
                 return team;
         }
