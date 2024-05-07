@@ -151,7 +151,7 @@ public class Events implements Listener {
 			case NETHERITE_BLOCK -> {
 				Arrow arrow = player.getWorld().spawn(player.getEyeLocation(), Arrow.class);
 				arrow.setVelocity(event.getProjectile().getVelocity());
-				arrow.addCustomEffect(new PotionEffect(PotionEffectType.LEVITATION, 5, 9), true);
+				arrow.addCustomEffect(new PotionEffect(PotionEffectType.LEVITATION, 10, 9), true);
 				arrow.setMetadata("levitate", new FixedMetadataValue(plugin, true));
 				arrow.setShooter(player);
 			}
@@ -168,7 +168,7 @@ public class Events implements Listener {
 				if((targetEntity = event.getHitEntity()) == null || !(targetEntity instanceof LivingEntity target))
 					return;
 
-				target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 5, 9, false, false, false));
+				target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 10, 9, false, false, false));
 				entity.remove();
 				return;
 			}
