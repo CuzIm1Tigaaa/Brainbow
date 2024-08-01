@@ -1,8 +1,11 @@
 package de.cuzim1tigaaa.brainbow.team;
 
 import de.cuzim1tigaaa.brainbow.Brainbow;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 
 public class TeamUtils {
 

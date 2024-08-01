@@ -4,3 +4,5 @@ author: CuzIm1Tigaaa
 main: ${project.groupId}.Brainbow
 api-version: 1.20
 description: Plugin for Brainbow
+depend:
+  - WorldEdit

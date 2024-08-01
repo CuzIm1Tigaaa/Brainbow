@@ -2,7 +2,10 @@ package de.cuzim1tigaaa.brainbow.listener;
 
 import de.cuzim1tigaaa.brainbow.Brainbow;
 import org.bukkit.*;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,6 +26,18 @@ public class Effects {
             final int index = i;
             Bukkit.getScheduler().runTaskLater(plugin, () -> 
                     snow.get(index).getBlock().setType(Material.SNOW), i);
+
+            for(Player player : Bukkit.getOnlinePlayers()) {
+                Location toCheck = player.getLocation().clone();
+
+                if(equals(toCheck, snow.get(index))) {
+                    if(player.hasPotionEffect(PotionEffectType.SLOW))
+                        continue;
+
+                    player.setFreezeTicks(1000);
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, PotionEffect.INFINITE_DURATION, 9, false, false, false));
+                }
+            }
         }
 
         int taskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -36,6 +51,15 @@ public class Effects {
                 final int index = i;
                 Bukkit.getScheduler().runTaskLater(plugin, () ->
                         snow.get(index).getBlock().setType(Material.AIR), i);
+
+                for(Player player : Bukkit.getOnlinePlayers()) {
+                    Location toCheck = player.getLocation().clone();
+
+                    if(equals(toCheck, snow.get(index))) {
+                        player.setFreezeTicks(0);
+                        player.removePotionEffect(PotionEffectType.SLOW);
+                    }
+                }
             }
         }, 150L);
     }
@@ -49,10 +73,13 @@ public class Effects {
             for(int z = -radius; z <= radius; z++)
                 if(x * x + z * z <= radius * radius) {
                     Location block = new Location(world, location.getBlockX() + x, location.getBlockY(), location.getBlockZ() + z);
-                    Location blockLocation = world.getHighestBlockAt(block).getLocation();
-                    snowLocations.add(blockLocation.add(0, 1, 0));
+                    Location blockLocation = plugin.getHighestBlockAt(block.clone());
+                    snowLocations.add(blockLocation);
                 }
         return snowLocations;
     }
 
+    public boolean equals(Location l1, Location l2) {
+        return l1.getBlockX() == l2.getBlockX() && l1.getBlockZ() == l2.getBlockZ();
+    }
 }

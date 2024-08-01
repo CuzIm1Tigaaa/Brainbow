@@ -8,6 +8,7 @@ import lombok.Getter;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -51,5 +52,31 @@ public class Brainbow extends JavaPlugin {
 						new TextComponent(t.getColor() + String.join("", Collections.nCopies(t.getHealth(), "❤"))));
 			}, 0L, 20L);
 		}
+	}
+
+	public Location getHighestBlockAt(Location location) {
+		if(location.getBlock().getType().isAir()) {
+			while(location.getBlock().getType().isAir())
+				location.subtract(0, 1, 0);
+
+			return location.add(0, 1, 0);
+		}
+
+		while(!location.getBlock().getType().isAir())
+			location.add(0, 1, 0);
+		return location;
+	}
+
+	public Location getHighestSolidBlockAt(Location location) {
+		if(location.getBlock().getType().isAir()) {
+			while(!location.getBlock().getType().isSolid())
+				location.subtract(0, 1, 0);
+
+			return location.add(0, 1, 0);
+		}
+
+		while(location.getBlock().getType().isSolid())
+			location.add(0, 1, 0);
+		return location;
 	}
 }
